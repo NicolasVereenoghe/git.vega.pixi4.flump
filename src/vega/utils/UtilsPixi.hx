@@ -3,7 +3,7 @@ import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.math.Point;
 import pixi.core.math.shapes.Rectangle;
-import pixi.interaction.EventTarget;
+import pixi.interaction.InteractionEvent;
 import vega.assets.AssetInstance;
 import vega.shell.ApplicationMatchSize;
 import vega.shell.GlobalPointer;
@@ -13,6 +13,26 @@ import vega.shell.GlobalPointer;
  * @author nico
  */
 class UtilsPixi {
+	/**
+	 * calcul de la boite englobante d'un graphisme dans le repère d'un autre graphisme
+	 * @param	pDisp			graphisme dont on cherche la boite englobante
+	 * @param	pToLocalCont	graphisme servant de repère pour les coord de boite englobante
+	 * @return	boite englobante
+	 */
+	public static function toLocalRect( pDisp : DisplayObject, pToLocalCont : DisplayObject) : Rectangle {
+		var lRect	: Rectangle	= pDisp.getLocalBounds();
+		var lTL		: Point		= pToLocalCont.toLocal( new Point( lRect.x, lRect.y), pDisp);
+		var lBR		: Point		= pToLocalCont.toLocal( new Point( lRect.x + lRect.width, lRect.y + lRect.height), pDisp);
+		
+		lRect.x			= Math.min( lTL.x, lBR.x);
+		lRect.y			= Math.min( lTL.y, lBR.y);
+		
+		lRect.width		= Math.max( lTL.x, lBR.x) - lRect.x;
+		lRect.height	= Math.max( lTL.y, lBR.y) - lRect.y;
+		
+		return lRect;
+	}
+	
 	/**
 	 * remplacement pour le DisplayObject::getLocalBounds qui rate sur le width et height
 	 * /!\ ne prends pas en compte le skew ou rotation
@@ -212,14 +232,14 @@ class UtilsPixi {
 		return pDisp;
 	}
 	
-	public static function setQuickBt( pDisp : DisplayObject, pListener : EventTarget -> Void) : Void {
+	public static function setQuickBt( pDisp : DisplayObject, pListener : InteractionEvent -> Void) : Void {
 		pDisp.buttonMode = true;
 		pDisp.interactive = true;
 		
 		pDisp.addListener( "touchstart", onQuickBtTouch);
 		pDisp.addListener( "mousedown", onQuickBtMouse);
 		
-		if ( quickBtListeners == null) quickBtListeners = new Map<DisplayObject,EventTarget->Void>();
+		if ( quickBtListeners == null) quickBtListeners = new Map<DisplayObject,InteractionEvent->Void>();
 		
 		quickBtListeners.set( pDisp, pListener);
 	}
@@ -233,21 +253,21 @@ class UtilsPixi {
 		quickBtListeners.remove( pDisp);
 	}
 	
-	static var quickBtListeners					: Map<DisplayObject,EventTarget->Void>					= null;
+	static var quickBtListeners					: Map<DisplayObject,InteractionEvent->Void>					= null;
 	
-	static function onQuickBtTouch( pE : EventTarget) : Void {
+	static function onQuickBtTouch( pE : InteractionEvent) : Void {
 		if ( GlobalPointer.isOK()) GlobalPointer.instance.forceCaptureDown( pE, false);
 		
 		callQuickListener( pE);
 	}
 	
-	static function onQuickBtMouse( pE : EventTarget) : Void {
+	static function onQuickBtMouse( pE : InteractionEvent) : Void {
 		if ( GlobalPointer.isOK()) GlobalPointer.instance.forceCaptureDown( pE, true);
 		
 		callQuickListener( pE);
 	}
 	
-	static function callQuickListener( pE : EventTarget) : Void {
+	static function callQuickListener( pE : InteractionEvent) : Void {
 		var lTarget	: DisplayObject	= cast pE.target;
 		var lDisp	: DisplayObject;
 		

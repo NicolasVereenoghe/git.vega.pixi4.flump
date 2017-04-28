@@ -1,4 +1,5 @@
 package vega.loader.file;
+import haxe.Timer;
 import pixi.loaders.Loader;
 import vega.loader.VegaLoader;
 import vega.shell.ApplicationMatchSize;
@@ -9,6 +10,14 @@ import vega.shell.ApplicationMatchSize;
  */
 class LoadingFile {
 	static var VERSION_PARAM				: String		= "v";
+	
+	/** nombre max de reloads avant de laisser tomber */
+	var RELOAD_MAX							: Int			= 20;
+	/** délai max d'attente en ms avant relance du loading échoué  */
+	var RELOAD_DELAY_MAX					: Int			= 3000;
+	
+	/** compteur de tentatives de loading */
+	var ctrReload							: Int			= 0;
 	
 	var _file								: MyFile;
 	var vegaLoader							: VegaLoader;
@@ -46,11 +55,15 @@ class LoadingFile {
 	
 	public function isIMG() : Bool { return Reflect.getProperty( loader.resources, _file.getId()).isImage; }
 	
+	public function isJson() : Bool { return Reflect.getProperty( loader.resources, _file.getId()).isJson != false; }
+	
 	public function getUrl() : String { return Reflect.getProperty( loader.resources, _file.getId()).url; }
 	
 	function buildLoader() : Void {
 		loader	= new Loader();
 		loader.add( _file.getId(), getUrlRequest());
+		loader.on( "error", onError);
+		loader.on( "complete", onLoadComplete);
 	}
 	
 	function freeLoader() : Void {
@@ -61,14 +74,26 @@ class LoadingFile {
 		}
 	}
 	
-	function doLoad() : Void { loader.load( onLoadComplete); }
+	function doLoad() : Void { loader.load(); }
 	
 	function removeLoaderListener() : Void {
 		loader.removeAllListeners();
 	}
 	
+	function onError() : Void {
+		ApplicationMatchSize.instance.traceDebug( "ERROR : LoadingFile::onError : " + _file.getId() + " ( " + ctrReload + ")"/*") : " + Reflect.getProperty( loader.resources, _file.getId()).error*/);
+		
+		if( ctrReload++ < RELOAD_MAX){
+			loader.reset();
+			loader.add( _file.getId(), getUrlRequest( true));
+			
+			Timer.delay( doLoad, RELOAD_DELAY_MAX * Math.round( Math.pow( ctrReload / RELOAD_MAX, 2)));
+		}else ApplicationMatchSize.instance.reload();
+	}
+	
 	function onLoadComplete() : Void {
-		if( Reflect.getProperty( loader.resources, _file.getId()).error == null){
+		if ( Reflect.getProperty( loader.resources, _file.getId()).error == null){
+			ApplicationMatchSize.instance.traceDebug( "INFO : LoadingFile::onLoadComplete : " + _file.getId());
 			trace( Reflect.getProperty( loader.resources, _file.getId()));
 			
 			removeLoaderListener();
@@ -76,16 +101,10 @@ class LoadingFile {
 			vegaLoader.onCurFileLoaded();
 			
 			vegaLoader = null;
-		}else{
-			ApplicationMatchSize.instance.traceDebug( "ERROR : LoadingFile::onLoadComplete : " + _file.getId() + " : " + Reflect.getProperty( loader.resources, _file.getId()).error);
-			
-			loader.reset();
-			loader.add( _file.getId(), getUrlRequest());
-			loader.load( onLoadComplete);
-		}
+		}else onError();
 	}
 	
-	function getUrlRequest() : String {
+	function getUrlRequest( pForceNoCache : Bool = false) : String {
 		var lName		: String	= _file.getName();
 		var lPath		: String	= _file.getPath() != null ? _file.getPath() : "";
 		var lUrl		: String;
@@ -93,17 +112,17 @@ class LoadingFile {
 		if( lName.indexOf( "://") != -1) lUrl = lName;
 		else lUrl = lPath + lName;
 		
-		lUrl = addVersionToUrl( lUrl, getVersionUrl( _file));
+		lUrl = addVersionToUrl( lUrl, getVersionUrl( _file, pForceNoCache));
 		
 		return lUrl;
 	}
 	
-	public static function getVersionUrl( pFile : MyFile) : String {
+	public static function getVersionUrl( pFile : MyFile, pForceNoCache : Bool = false) : String {
 		var lVer	: String	= pFile.getVersion();
 		
-		if ( lVer != null){
-			if ( lVer != MyFile.NO_VERSION){
-				if ( lVer == MyFile.VERSION_NO_CACHE) return Std.string( Date.now().getTime());
+		if ( lVer != null || pForceNoCache){
+			if ( lVer != MyFile.NO_VERSION || pForceNoCache){
+				if ( lVer == MyFile.VERSION_NO_CACHE || pForceNoCache) return Std.string( Date.now().getTime());
 				else return lVer;
 			}
 		}

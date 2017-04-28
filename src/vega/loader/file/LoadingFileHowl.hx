@@ -1,4 +1,5 @@
 package vega.loader.file;
+import haxe.Timer;
 import howler.Howl;
 import vega.shell.ApplicationMatchSize;
 import vega.sound.SndDesc;
@@ -10,14 +11,8 @@ import vega.sound.SndMgr;
  * @author nico
  */
 class LoadingFileHowl extends LoadingFile {
-	/** nombre max de reloads avant de laisser tomber */
-	public static inline var RELOAD_MAX			: Int					= 20;
-	
 	/** descripteur de son chargé */
 	var desc									: SndDesc				= null;
-	
-	/** compteur de tentatives de loading */
-	var ctrReload								: Int					= 0;
 	
 	/**
 	 * construction de chargement de son Howl ; on désactive la lecture automatique et le préchargement automatique dans les options des descripteur de son
@@ -85,7 +80,7 @@ class LoadingFileHowl extends LoadingFile {
 		if( ctrReload++ < RELOAD_MAX){
 			ApplicationMatchSize.instance.traceDebug( "ERROR : LoadingFileHowl::onLoadError : " + desc.getId() + " : retry " + ctrReload);
 			
-			desc.getHowl().load();
+			Timer.delay( doReload, RELOAD_DELAY_MAX * Math.round( Math.pow( ctrReload / RELOAD_MAX, 2)));
 		}else {
 			ApplicationMatchSize.instance.traceDebug( "ERROR : LoadingFileHowl::onLoadError : " + desc.getId() + " : skip !");
 			
@@ -99,5 +94,18 @@ class LoadingFileHowl extends LoadingFile {
 			
 			free();
 		}
+	}
+	
+	/**
+	 * on capture une demande de reload différée ; on effectue un reload avec "anti cache"
+	 */
+	function doReload() : Void {
+		removeLoaderListener();
+		
+		desc.getHowl().unload();
+		
+		desc.forceAntiCache();
+		
+		doLoad();
 	}
 }

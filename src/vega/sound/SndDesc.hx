@@ -21,6 +21,9 @@ class SndDesc {
 	/** descripteur de fichier utilisé pour identifier la ressource chargée du son */
 	var _fileResId						: MyFile							= null;
 	
+	/** listes d'extensions supportées ; laisser null pour n'avoir que celles par défaut (SndMgr::exts) */
+	var _localExts						: Array<String>						= null;
+	
 	/** mode de lecture par défaut ; null si aucun particulier */
 	var _playMode						: SndPlayMode						= null;
 	public var playMode( get, null)		: SndPlayMode;
@@ -44,8 +47,10 @@ class SndDesc {
 		if ( pOtions == null) _options = {};
 		else _options = pOtions;
 		
+		if ( pExts != null) _localExts = pExts;
+		
 		if ( _options.src == null) {
-			if ( pFile == null) pFile = new MyFile( pId);
+			if ( pFile == null) pFile = new MyFile( _id);
 			else if ( pFile.getName() == "" || pFile.getName() == null) pFile = new MyFile( pId, pFile.getPath(), pFile.getVersion());
 			
 			lName	= pFile.getName();
@@ -58,13 +63,37 @@ class SndDesc {
 			
 			_options.src = new Array<String>();
 			
-			while ( _options.src.length < pExts.length) _options.src.push( LoadingFile.addVersionToUrl( lUrl + pExts[ _options.src.length - 1], LoadingFile.getVersionUrl( pFile)));
+			while ( _options.src.length < pExts.length) _options.src.push( LoadingFile.addVersionToUrl( lUrl + pExts[ _options.src.length], LoadingFile.getVersionUrl( pFile)));
 		}
 		
 		if ( pFile == null) _fileResId = new MyFile( pId);
 		else _fileResId = pFile;
 		
 		//_options.html5 = true;
+	}
+	
+	/**
+	 * on réécrit les urls de sources de sons pour y forcer une nouvelle variable anti-cache
+	 */
+	public function forceAntiCache() : Void {
+		var lExts	: Array<String>	= _localExts != null ? _localExts : SndMgr.getInstance().getExts();
+		var lFile	: MyFile;
+		var lName	: String;
+		var lPath	: String;
+		var lUrl	: String;
+		
+		if ( _fileResId.getName() == "" || _fileResId.getName() == null) lFile = new MyFile( _id, _fileResId.getPath(), _fileResId.getVersion());
+		else lFile = _fileResId;
+		
+		lName	= lFile.getName();
+		lPath	= lFile.getPath() != null ? lFile.getPath() : "";
+		
+		if( lName.indexOf( "://") != -1) lUrl = lName;
+		else lUrl = lPath + lName;
+		
+		_options.src = new Array<String>();
+		
+		while ( _options.src.length < lExts.length) _options.src.push( LoadingFile.addVersionToUrl( lUrl + lExts[ _options.src.length], LoadingFile.getVersionUrl( lFile, true)));
 	}
 	
 	/**

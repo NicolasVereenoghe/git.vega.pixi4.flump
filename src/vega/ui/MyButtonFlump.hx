@@ -2,7 +2,7 @@ package vega.ui;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.flump.Movie;
-import pixi.interaction.EventTarget;
+import pixi.interaction.InteractionEvent;
 import vega.shell.ApplicationMatchSize;
 import vega.shell.GlobalPointer;
 import vega.utils.UtilsFlump;
@@ -25,6 +25,8 @@ class MyButtonFlump {
 	public static inline var NAME_SELECT_DOWN	: String					= "selectDown";
 	/** nom de symbole d'état "selectOver" dans le conteneur */
 	public static inline var NAME_SELECT_OVER	: String					= "selectOver";
+	/** nom de symbole d'état "disable" dans le conteneur */
+	public static inline var NAME_DISABLE		: String					= "disable";
 	
 	var stateUp								: DisplayObject;
 	var stateOver							: DisplayObject;
@@ -34,29 +36,31 @@ class MyButtonFlump {
 	var stateSelectOver						: DisplayObject;
 	var stateSelectDown						: DisplayObject;
 	
+	var stateDisable						: DisplayObject;
+	
 	var curState							: DisplayObject;
 	
 	var container							: Movie;
 	
 	var hit									: DisplayObject;
 	
-	var onDownCB							: Array<EventTarget -> Void>	= null;
-	var onReleaseCB							: EventTarget -> Void			= null;
+	var onDownCB							: Array<InteractionEvent -> Void>	= null;
+	var onReleaseCB							: InteractionEvent -> Void			= null;
 	
 	/** pile de listeners de press (mouse : release, touch : down) */
-	var onPressCB							: Array <EventTarget -> Void>	= null;
+	var onPressCB							: Array <InteractionEvent -> Void>	= null;
 	/** pile de listeners de mouse over */
-	var onMouseOverCB						: Array <EventTarget -> Void>	= null;
+	var onMouseOverCB						: Array <InteractionEvent -> Void>	= null;
 	
-	var isDown								: Bool						= false;
+	var isDown								: Bool							= false;
 	
 	/** flag indiquant si un état de bouton est un conteneur, on lance la lecture récursive de son contenu (true) ; false pour ne pas lire dans tous les cas */
-	var autoPlay							: Bool						= false;
+	var autoPlay							: Bool							= false;
 	/** true pour conserver la frame en cours lors d'une transition d'état, sinon false repartir de dernière frame en cours */
-	var isPreservFrame						: Bool						= false;
+	var isPreservFrame						: Bool							= false;
 	
 	/** flag indiquant si on est en pause (true) ou pas (false) */
-	var isPause								: Bool						= false;
+	var isPause								: Bool							= false;
 	
 	/**
 	 * construction
@@ -66,7 +70,7 @@ class MyButtonFlump {
 	 * @param	pIsAutoPlay
 	 * @param	pIsPreservFrame	mettre true pour conserver la frame en cours lors d'une transition d'état, sinon laisser false repartir de dernière frame en cours
 	 */
-	public function new( pCont : Movie, pOnDown : EventTarget -> Void = null, pOnRelease : EventTarget -> Void = null, pIsAutoPlay : Bool = false, pIsPreservFrame : Bool = false) {
+	public function new( pCont : Movie, pOnDown : InteractionEvent -> Void = null, pOnRelease : InteractionEvent -> Void = null, pIsAutoPlay : Bool = false, pIsPreservFrame : Bool = false) {
 		container		= pCont;
 		onDownCB		= [];
 		onReleaseCB		= pOnRelease;
@@ -126,6 +130,12 @@ class MyButtonFlump {
 			stateSelectOver = pCont.getLayer( NAME_SELECT_OVER).getChildAt( 0);
 			stateSelectOver.interactive = false;
 			stateSelectOver.visible = false;
+		}
+		
+		if( UtilsFlump.getLayer( NAME_DISABLE, pCont) != null) {
+			stateDisable = pCont.getLayer( NAME_DISABLE).getChildAt( 0);
+			stateDisable.interactive = false;
+			stateDisable.visible = false;
 		}
 		
 		enableState( stateUp);
@@ -191,19 +201,19 @@ class MyButtonFlump {
 	 * ajout d'un listener de donw sur bouton
 	 * @param	pListener	écouteur
 	 */
-	public function addDownListener( pListener : EventTarget -> Void) : Void { onDownCB.push( pListener); }
+	public function addDownListener( pListener : InteractionEvent -> Void) : Void { onDownCB.push( pListener); }
 	
 	/**
 	 * ajout d'un é"couteur de press (mouse : release, touch : down)
 	 * @param	pListener	écouteur de press
 	 */
-	public function addPressListener( pListener : EventTarget -> Void) : Void { onPressCB.push( pListener); }
+	public function addPressListener( pListener : InteractionEvent -> Void) : Void { onPressCB.push( pListener); }
 	
 	/**
 	 * ajout d'un listener demouse over
 	 * @param	pListener	écouteur de mouse over
 	 */
-	public function addMouseOverListener( pListener : EventTarget -> Void): Void { onMouseOverCB.push( pListener); }
+	public function addMouseOverListener( pListener : InteractionEvent -> Void): Void { onMouseOverCB.push( pListener); }
 	
 	/**
 	 * récupère le conteneur modèle du bouton
@@ -224,6 +234,12 @@ class MyButtonFlump {
 	public function switchEnable( pIsEnable : Bool) : Void {
 		hit.buttonMode	= pIsEnable;
 		hit.interactive	= pIsEnable;
+		
+		if ( pIsEnable){
+			if ( stateDisable != null && curState == stateDisable) enableState( stateUp);
+		}else{
+			if ( stateDisable != null) enableState( stateDisable);
+		}
 	}
 	
 	/**
@@ -322,7 +338,7 @@ class MyButtonFlump {
 	 */
 	function isSelect() : Bool { return curState != null && ( curState == stateSelect || curState == stateSelectDown || curState == stateSelectOver); }
 	
-	function onTOver( pE : EventTarget) : Void {
+	function onTOver( pE : InteractionEvent) : Void {
 		if ( isSelect()) {
 			if ( stateSelectOver != null && isOver()) enableState( stateSelectOver);
 			else enableState( stateSelect);
@@ -332,7 +348,7 @@ class MyButtonFlump {
 		}
 	}
 	
-	function onOver( pE : EventTarget) : Void {
+	function onOver( pE : InteractionEvent) : Void {
 		if ( isSelect()) {
 			if ( stateSelectOver != null) enableState( stateSelectOver);
 			else enableState( stateSelect);
@@ -344,20 +360,20 @@ class MyButtonFlump {
 		callListeners( onMouseOverCB, pE);
 	}
 	
-	function onTUp( pE : EventTarget) : Void {
+	function onTUp( pE : InteractionEvent) : Void {
 		onTUpOut( pE);
 		
 		if ( onReleaseCB != null) onReleaseCB( pE);
 	}
 	
-	function onTUpOut( pE : EventTarget) : Void {
+	function onTUpOut( pE : InteractionEvent) : Void {
 		isDown = false;
 		
 		if ( isSelect()) enableState( stateSelect);
 		else enableState( stateUp);
 	}
 	
-	function onUp( pE : EventTarget) : Void {
+	function onUp( pE : InteractionEvent) : Void {
 		isDown = false;
 		
 		if ( isSelect()) {
@@ -372,9 +388,9 @@ class MyButtonFlump {
 		callListeners( onPressCB, pE);
 	}
 	
-	function onTDown( pE : EventTarget) : Void { onDown( pE, false); }
+	function onTDown( pE : InteractionEvent) : Void { onDown( pE, false); }
 	
-	function onDown( pE : EventTarget, pIsMouse : Bool = true) : Void {
+	function onDown( pE : InteractionEvent, pIsMouse : Bool = true) : Void {
 		isDown = true;
 		
 		if( GlobalPointer.isOK()) GlobalPointer.instance.forceCaptureDown( pE, pIsMouse);
@@ -395,10 +411,8 @@ class MyButtonFlump {
 		//pE.stopPropagation();
 	}
 	
-	function onOut( pE : EventTarget) : Void {
+	function onOut( pE : InteractionEvent) : Void {
 		isDown = false;
-		
-		enableState( stateUp);
 		
 		if ( isSelect()) enableState( stateSelect);
 		else enableState( stateUp);
@@ -411,8 +425,8 @@ class MyButtonFlump {
 	 * @param	pListeners	pile de listeners à appeler
 	 * @param	pE			event d'interaction à transmettre
 	 */
-	function callListeners( pListeners : Array<EventTarget->Void>, pE : EventTarget) : Void {
-		var lListener	: EventTarget->Void;
+	function callListeners( pListeners : Array<InteractionEvent->Void>, pE : InteractionEvent) : Void {
+		var lListener	: InteractionEvent->Void;
 		
 		if ( pListeners != null) for ( lListener in pListeners) lListener( pE);
 	}

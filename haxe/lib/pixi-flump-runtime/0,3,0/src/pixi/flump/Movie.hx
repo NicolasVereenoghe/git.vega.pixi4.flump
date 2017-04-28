@@ -10,6 +10,7 @@ import pixi.core.math.shapes.Rectangle;
 import pixi.core.sprites.Sprite;
 import pixi.core.ticker.Ticker;
 import pixi.flump.Resource;
+import haxe.extern.EitherType;
 
 
 @:access(pixi.flump.Resource)
@@ -365,16 +366,12 @@ class Movie extends Container implements IFlumpMovie {
 		layer.skew.y = skewY;
 		layer.alpha  = alpha;
 		
-		if (keyframe.layer.refAnimatedTint == null) {
-			if (tintMultiplier != 0) {
-				keyframe.layer.refAnimatedTint = new AnimateTintFilter(tintColor, tintMultiplier);
-				if (layer.filters == null) layer.filters = [keyframe.layer.refAnimatedTint];
-			}
-		} else if (tintMultiplier == 0) {
-			layer.filters.remove(keyframe.layer.refAnimatedTint);
-			keyframe.layer.refAnimatedTint = null;
-		}
+		if (keyframe.layer.refAnimatedTint == null) keyframe.layer.refAnimatedTint = new AnimateTintFilter(tintColor, tintMultiplier);
 		else keyframe.layer.refAnimatedTint.update(tintColor, tintMultiplier);
+		
+		if (tintMultiplier != 0) layer.filters=[keyframe.layer.refAnimatedTint];
+		else if (layer.filters != null) layer.filters = null;
+
 	}
 
 	private function setMask(layer:Layer):Void{
@@ -404,8 +401,9 @@ class Movie extends Container implements IFlumpMovie {
 		emit("labelHit", label.name);
 	}
 	
-
-	override public function destroy(): Void {
+	// nouvelle signature de destroy, pixi v4.4
+	//override public function destroy(): Void {
+	override public function destroy( ?options : EitherType<Bool,DestroyOptions>) : Void {
 		stop();
 		onComplete = null;
 		for (layer in layers) layer.removeChildren();

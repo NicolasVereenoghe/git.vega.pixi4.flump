@@ -1,5 +1,6 @@
 package flump.filters;
 //import pixi.core.renderers.webgl.filters.AbstractFilter;
+// pixi 4 class
 import pixi.core.renderers.webgl.filters.Filter;
 
 private typedef Uniform = {
@@ -23,13 +24,15 @@ private typedef V3 = {
  * @author Mathieu Anthoine
  */
 //class AnimateTintFilter extends AbstractFilter
+// pixi 4 class
 class AnimateTintFilter extends Filter
 {
 
 	public var multiplier (default,null):Float;
 	public var color (default, null):UInt;
 	
-	private var uniforms:AnimateTint;
+	// pixi 4.4.3 : redefinition not allowed
+	//private var uniforms:AnimateTint;
 	
 	public function new(pColor:UInt,pMultiplier:Float=1) 
 	{
@@ -56,8 +59,9 @@ class AnimateTintFilter extends Filter
 	}
 	
 	public function update(pColor:UInt, pMultiplier:Float = 1) : Void {
-		uniforms.color.value = hex2v3(color=pColor);
-		uniforms.multiplier.value = multiplier= pMultiplier;
+		uniforms.color.value = hex2v3(color = pColor);
+		
+		if( ! Std.is( uniforms.multiplier, Float)) uniforms.multiplier.value = multiplier= pMultiplier;
 	}
 	
 }

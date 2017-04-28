@@ -13,9 +13,8 @@ using Reflect;
 @:access(pixi.flump.Resource)
 class Parser{
 
-	
-	//public static function parse(resolution:Float, ?loadFromCache:Bool = true){
-	public static function parse(resolution:Float, ?loadFromCache:String = null){
+
+	public static function parse(resolution:Float, ?loadFromCache:Bool = true){
 		return function(resource:Resource, next:Void->Void){
 			if(resource.data == null || resource.isJson == false) return;
 			if(!resource.data.hasField("md5") || !resource.data.hasField("movies") || !resource.data.hasField("textureGroups") || !resource.data.hasField("frameRate")) return;
@@ -27,8 +26,7 @@ class Parser{
 			atlasLoader.baseUrl = ~/\/(.[^\/]*)$/i.replace(resource.url, "");
 
 			for(atlasSpec in lib.atlases){
-				//atlasSpec.file += loadFromCache ? '' : "?" + Date.now().getTime();
-				atlasSpec.file += loadFromCache != null ? "?v=" + loadFromCache : "?" + Date.now().getTime();
+				atlasSpec.file += loadFromCache ? '' : "?" + Date.now().getTime();
 				atlasLoader.add(atlasSpec.file, function(atlasResource){
 					var atlasTexture = new BaseTexture(atlasResource.data);
 					atlasTexture.resolution = resolution;

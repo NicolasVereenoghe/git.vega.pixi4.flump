@@ -6,7 +6,7 @@ import js.Browser;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.text.Text;
-import pixi.core.text.TextStyleObject;
+import pixi.core.text.TextStyle;
 import pixi.flump.Movie;
 import vega.shell.ApplicationMatchSize;
 import vega.utils.UtilsFlump;

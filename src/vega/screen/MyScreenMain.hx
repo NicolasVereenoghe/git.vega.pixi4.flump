@@ -2,7 +2,7 @@ package vega.screen;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.flump.Movie;
-import pixi.interaction.EventTarget;
+import pixi.interaction.InteractionEvent;
 import vega.local.LocalMgr;
 import vega.ui.MyButtonFlump;
 import vega.utils.UtilsFlump;
@@ -50,17 +50,17 @@ class MyScreenMain extends MyScreen {
 		super.buildContent();
 		
 		if ( asset != null){
-			if( UtilsFlump.getLayerWithPrefixInMovie( "hit", cast asset.getContent()) != null){
+			if( UtilsFlump.getLayer( "hit", cast asset.getContent()) != null){
 				hit = cast( asset.getContent(), Movie).getLayer( "hit");
 				hit.alpha = 0;
 				
 				UtilsPixi.setQuickBt( hit, onBtStart);
 			}
 			
-			if ( UtilsFlump.getLayerWithPrefixInMovie( "start", cast asset.getContent()) != null){
+			if ( UtilsFlump.getLayer( "start", cast asset.getContent()) != null){
 				lStart = cast( asset.getContent(), Movie).getLayer( "start");
 				
-				if ( Std.is( cast( lStart, Container).getChildAt( 0), Movie) && UtilsFlump.getLayerWithPrefixInMovie( "up", cast cast( lStart, Container).getChildAt( 0)) != null){
+				if ( Std.is( cast( lStart, Container).getChildAt( 0), Movie) && UtilsFlump.getLayer( "up", cast cast( lStart, Container).getChildAt( 0)) != null){
 					startBtFlump = new MyButtonFlump( cast cast( lStart, Container).getChildAt( 0));
 					startBtFlump.addPressListener( onBtStart);
 				}else{
@@ -78,7 +78,7 @@ class MyScreenMain extends MyScreen {
 	
 	override function launchAfterInit() : Void { shell.onScreenReady( this); }
 	
-	function onBtStart( pE : EventTarget) : Void {
+	function onBtStart( pE : InteractionEvent) : Void {
 		shell.onScreenClose( this);
 		
 		setModeFadeOut();
