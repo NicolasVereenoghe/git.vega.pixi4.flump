@@ -1,0 +1,14 @@
+{
+  "name": "vega-pixi-flump-runtime",
+  "url" : "https://github.com/NicolasVereenoghe/git.vega.pixi4.flump",
+  "license": "MIT",
+  "tags": ["flump", "animation", "flash", "timeline", "pixi"],
+  "description": "A Flump runtime for Pixi.js.",
+  "version": "0.0.1",
+  "releasenote": "Requires pixi.js v4.5.1",
+  "classPath":"src",
+  "contributors": ["NicolasVereenoghe"],
+  "dependencies": {
+    "pixijs": ""
+  }
+}

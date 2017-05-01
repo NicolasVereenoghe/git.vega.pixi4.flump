@@ -98,10 +98,11 @@ class LoadingFileFlump extends LoadingFile {
 		
 		for( lSpec in lTxtSpecs){
 			lFrame	= new Rectangle( lSpec.rect.x, lSpec.rect.y, lSpec.rect.width, lSpec.rect.height);
-			lOrigin	= new Point( lSpec.origin.x, lSpec.origin.y);
+			// code sans effet, porté du parser flump ... il manque un truc ??
+			/*lOrigin	= new Point( lSpec.origin.x, lSpec.origin.y);
 			
 			lOrigin.x	= lOrigin.x / lFrame.width;
-			lOrigin.y	= lOrigin.y / lFrame.height;
+			lOrigin.y	= lOrigin.y / lFrame.height;*/
 			
 			textures[ lSpec.symbol]	= new Texture( lTexture, lFrame);
 		}
